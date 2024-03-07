@@ -1,11 +1,14 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     // Static list of users, acting as a database
-    private static ArrayList<User> users = new ArrayList<>();
+    private static final ArrayList<User> users = new ArrayList<>();
 
     // Mock authentication service that always returns the first user when log in, and does nothing when sign up
-    private static IAuthenticationService authService = new IAuthenticationService() {
+    private static final IAuthenticationService authService = new  IAuthenticationService() {
         @Override
         public User signUp(String username, String password) {
             return null;
@@ -77,6 +80,9 @@ public class Main {
         User user = authService.logIn(username, password);
         System.out.println("Welcome, " + user.getUsername() + "!");
         // TODO Later: Add the to-do list operations
+        //Create an instance of the ToDoList class with the logged-in user and call the run method
+        ToDoList List = new ToDoList(user);
+        List.run();
     }
 
     /**
@@ -90,6 +96,13 @@ public class Main {
         String password = scanner.nextLine();
         User user = authService.signUp(username, password);
         // TODO Later: Shows a message based on the result
+
+        // Show message based on the result of signUp method
+        if (user != null) {
+            System.out.println("User " + username + " has been created successfully!");
+        } else {
+            System.out.println("The username is already taken!");
+        }
     }
 
     /**
