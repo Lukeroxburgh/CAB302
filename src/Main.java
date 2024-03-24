@@ -1,114 +1,80 @@
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.HashMap;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    // Static list of users, acting as a database
-    private static final ArrayList<User> users = new ArrayList<>();
-
-    // Mock authentication service that always returns the first user when log in, and does nothing when sign up
-    private static final IAuthenticationService authService = new  IAuthenticationService() {
-        @Override
-        public User signUp(String username, String password) {
-            return null;
-        }
-
-        @Override
-        public User logIn(String username, String password) {
-            return users.get(0);
-        }
-    };
-    private static boolean isRunning = true;
-
-    /**
-     * The entry point of the application.
-     * @param args The command-line arguments.
-     */
+import obstacles.*;
+import common.*;
+import pathFinding.*;
+class Main {
     public static void main(String[] args) {
-        users.add(new User("test", "test"));
-        while (isRunning) {
-            showMenu();
+        // Parse the command line arguments into obstacles
+        // and create a map with those obstacles
+        HashMap<String, ArrayList<String>> parsedArgs = parseArgs(args);
+        ArrayList<Obstacle> obstacles = parseObstacles(parsedArgs);
+        Map map = new Map(obstacles);
+
+        // Parse the start and target locations
+        String startArg = stripParentheses(parsedArgs.get("-start").get(0));
+        String targetArg = stripParentheses(parsedArgs.get("-target").get(0));
+        Location start = Location.parse(startArg);
+        Location target = Location.parse(targetArg);
+
+        // Show the map
+        System.out.println(map.getSolvedMap(start, target));
+    }
+
+    /**
+     * Parses the command line arguments into a HashMap of arguments
+     * @param args The command line arguments
+     * @return A HashMap of arguments
+     */
+    /**
+     * Strips the parentheses from the argument
+     * @param arg The argument to strip
+     * @return The argument without parentheses
+     */
+    private static String stripParentheses(String arg) {
+        return arg.substring(1, arg.length() - 1);
+    }
+
+    /**
+     * Parses the obstacles from the command line arguments
+     * @param parsedArgs The parsed arguments
+     */
+    public static ArrayList<Obstacle> parseObstacles(HashMap<String, ArrayList<String>> parsedArgs) {
+        ArrayList<Obstacle> obstacles = new ArrayList<>();
+        for (ObstacleType type : ObstacleType.values()) {
+            String key = "-" + type.getArgumentName();
+            ArrayList<String> args = parsedArgs.get(key);
+            if (args == null) {
+                continue;
+            }
+            for (String arg : args) {
+                // Remove the parentheses from the argument
+                String cleanedArg = stripParentheses(arg);
+                Obstacle obstacle = switch (type) {
+                    case GUARD -> Guard.parse(cleanedArg);
+                    case FENCE -> Fence.parse(cleanedArg);
+                    case SENSOR -> Sensor.parse(cleanedArg);
+                    case CAMERA -> Camera.parse(cleanedArg);
+                };
+                obstacles.add(obstacle);
+            }
         }
+        return obstacles;
     }
-
-    /**
-     * Displays the main menu to the user.
-     */
-    public static void showMenu() {
-        System.out.println("Welcome to the To-Do List Application!");
-        System.out.println("1. Log in");
-        System.out.println("2. Sign up");
-        System.out.println("3. Exit");
-        System.out.print("Enter your choice: ");
-        // Ask for user choice
-        Scanner scanner = new Scanner(System.in);
-        int choice = scanner.nextInt();
-        handleMenu(choice);
-    }
-
-    /**
-     * Handles the user's choice, mapping the menu options to the corresponding methods.
-     * @param choice The user's choice.
-     */
-    public static void handleMenu(int choice) {
-        switch (choice) {
-            case 1:
-                onLogIn();
-                break;
-            case 2:
-                onSignUp();
-                break;
-            case 3:
-                onExit();
-                break;
-            default:
-                System.out.println("Invalid choice!");
-                showMenu();
+    private static HashMap<String, ArrayList<String>> parseArgs(String[] args) {
+        HashMap<String, ArrayList<String>> parsedArgs = new HashMap<>();
+        ArrayList<String> argValues = null;
+        for (String arg : args) {
+            if (arg.startsWith("-")) {
+                argValues = new ArrayList<>();
+                parsedArgs.put(arg, argValues);
+                continue;
+            }
+            if (argValues != null) {
+                argValues.add(arg);
+            }
         }
-    }
-
-    /**
-     * Handles the log-in process, and the post-login operations.
-     */
-    public static void onLogIn() {
-        System.out.print("Enter your username: ");
-        Scanner scanner = new Scanner(System.in);
-        String username = scanner.nextLine();
-        System.out.print("Enter your password: ");
-        String password = scanner.nextLine();
-        User user = authService.logIn(username, password);
-        System.out.println("Welcome, " + user.getUsername() + "!");
-        // TODO Later: Add the to-do list operations
-        //Create an instance of the ToDoList class with the logged-in user and call the run method
-        ToDoList List = new ToDoList(user);
-        List.run();
-    }
-
-    /**
-     * Handles the sign-up process.
-     */
-    public static void onSignUp() {
-        System.out.print("Enter your username: ");
-        Scanner scanner = new Scanner(System.in);
-        String username = scanner.nextLine();
-        System.out.print("Enter your password: ");
-        String password = scanner.nextLine();
-        User user = authService.signUp(username, password);
-        // TODO Later: Shows a message based on the result
-
-        // Show message based on the result of signUp method
-        if (user != null) {
-            System.out.println("User " + username + " has been created successfully!");
-        } else {
-            System.out.println("The username is already taken!");
-        }
-    }
-
-    /**
-     * Exits the application by setting the `isRunning` flag to false.
-     */
-    public static void onExit() {
-        isRunning = false;
+        return parsedArgs;
     }
 }
